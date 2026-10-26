@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.venv/
+.env
+.env.*
+.claude/settings.local.json
+*.log
+*.bak
+groups-*.json
+groups-*.lock

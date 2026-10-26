@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<title>终端配色位置图</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* An annotated terminal canvas, paired with a location inspector. */
+:root {
+  --bg: #f3f5f7; --paper: #ffffff; --ink: #263246; --muted: #59697e; --line: #d8e0e9; --accent: #225eb8;
+  --display: "Avenir Next", "PingFang SC", sans-serif; --body: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --term-bg: #181e2b; --term-sidebar: #202838; --term-text: #d4deee; --term-muted: #9baac2; --term-rule: #485875; --term-selection: #303c52;
+  --blue: #7aa2f7; --green: #9ece6a; --yellow: #e0af68; --purple: #bb9af7; --red: #f7768e; --clear: transparent;
+  --focus: #fff1a8; --focus-wash: #fff1a815; --shade: #17243c14;
+  color-scheme: light;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+[hidden] { display: none !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #141b27; --paper: #1d2737; --ink: #e3eaf5; --muted: #a5b3c8; --line: #3b4a60; --accent: #91b9ff; --shade: #00000026; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #141b27; --paper: #1d2737; --ink: #e3eaf5; --muted: #a5b3c8; --line: #3b4a60; --accent: #91b9ff; --shade: #00000026; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.65; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 48px; }
+main { max-width: 1280px; margin-inline: auto; display: grid; gap: 26px; }
+h1,h2,h3,p,figure { margin: 0; }
+h1,h2,h3 { font-family: var(--display); text-wrap: balance; }
+h1 { font-size: clamp(26px, 3vw, 38px); line-height: 1.3; letter-spacing: -.03em; font-weight: 650; }
+h2 { font-size: 20px; line-height: 1.4; }
+h3 { font-size: 16px; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible,a:focus-visible,summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+header { display: grid; gap: 12px; }
+.eyebrow { color: var(--muted); font: 12px var(--mono); letter-spacing: .04em; }
+.lead { max-width: 78ch; color: var(--muted); }
+.answer { border-left: 3px solid var(--accent); padding-left: 16px; max-width: 88ch; }
+.answer strong { color: var(--ink); }
+.toolbar { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.symbol { width: 11px; height: 11px; border: 1.5px solid currentColor; display: inline-block; }
+.symbol.done { background: var(--accent); color: var(--accent); border-radius: 50%; }
+.symbol.config { color: var(--accent); border-radius: 50%; }
+.symbol.theme { transform: rotate(45deg); }
+.action { border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); padding: 8px 12px; font-size: 13px; }
+.action[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--paper)); }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 22px; align-items: start; }
+.workspace > * { min-width: 0; }
+.canvas { border: 1px solid var(--term-rule); background: var(--term-bg); color: var(--term-text); border-radius: 8px; overflow: hidden; box-shadow: 0 12px 32px var(--shade); }
+.canvas-note { padding: 10px 14px; border-bottom: 1px solid var(--term-rule); font: 11px var(--mono); color: var(--term-muted); display: flex; justify-content: space-between; gap: 10px; }
+.terminal-scroll { overflow-x: auto; max-width: 100%; }
+.terminal { display: grid; grid-template-columns: 255px minmax(0, 1fr); min-width: 650px; min-height: 470px; font-family: var(--mono); font-size: 13px; line-height: 1.7; }
+.sidebar { position: relative; background: var(--term-sidebar); border-right: 1px solid var(--term-rule); padding: 12px; display: flex; flex-direction: column; gap: 13px; }
+.region-head { color: var(--term-muted); display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; }
+.row { display: flex; gap: 5px; align-items: center; min-height: 27px; }
+.row.selected { background: var(--term-selection); border-radius: 3px; margin-inline: -4px; padding-inline: 4px; }
+.row.indent { padding-left: 24px; color: var(--term-muted); }
+.details-row { padding-left: 26px; gap: 9px; font-size: 11px; }
+.sidebar-rule { border-top: 1px solid var(--term-rule); margin-block: 1px; }
+.hot { background: none; color: inherit; border: 1px solid var(--clear); padding: 0 2px; border-radius: 3px; text-align: left; line-height: inherit; font-family: inherit; white-space: nowrap; position: relative; }
+.hot:hover { background: var(--focus-wash); outline: 1px dashed var(--term-muted); }
+.hot.is-active { outline: 2px solid var(--focus); outline-offset: 2px; background: var(--focus-wash); }
+.hot:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.number { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; margin-left: 5px; border: 1px solid var(--term-rule); border-radius: 3px; font: 10px var(--mono); color: var(--term-muted); vertical-align: middle; }
+.t-blue { color: var(--blue); } .t-yellow { color: var(--yellow); } .t-green { color: var(--green); } .t-muted { color: var(--term-muted); }
+.grow { flex: 1; }
+.agent-space { font-size: 11px; }
+.agent-block { display: grid; gap: 2px; }
+.agent-block + .agent-block { margin-top: 7px; }
+.agent-detail { padding-left: 22px; font-size: 11px; color: var(--term-muted); }
+.preview-on .agent-space[data-tag="blue"] { color: var(--blue); }
+.preview-on .agent-space[data-tag="yellow"] { color: var(--yellow); }
+.preview-label { padding: 8px 14px; background: var(--term-selection); color: var(--term-text); font-size: 12px; border-top: 1px solid var(--term-rule); }
+.sidebar-bottom { margin-top: auto; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 10px; color: var(--term-muted); }
+.main-pane { display: flex; flex-direction: column; min-width: 0; }
+.tabs { padding: 9px 10px; background: var(--term-bg); display: flex; gap: 7px; border-bottom: 1px solid var(--term-rule); align-items: center; }
+.tab-on { color: var(--term-bg); background: var(--blue); padding: 2px 6px; border-radius: 3px; }
+.tab-off { color: var(--term-muted); padding-inline: 5px; }
+.pane { margin: 14px 12px; padding: 15px 12px; border: 1px solid var(--blue); min-height: 300px; position: relative; flex: 1; }
+.pane-label { position: absolute; top: -13px; left: 9px; background: var(--term-bg); color: var(--blue); padding-inline: 4px; }
+.body-sample { display: block; white-space: normal; width: 100%; padding: 4px; font-size: 12px; }
+.body-sample > span { display: block; }
+.body-sample .blank { min-height: 12px; }
+.mock-popup { margin-top: 22px; padding: 10px 12px; border: 1px solid var(--term-rule); background: var(--term-sidebar); font-size: 11px; display: block; width: 100%; white-space: normal; }
+.mock-popup b { display: block; font-weight: 500; color: var(--term-text); }
+.mock-popup .t-blue { display: block; margin-top: 5px; }
+.footer-bar { padding: 6px 10px; font-size: 10px; color: var(--term-muted); display: flex; gap: 8px; background: var(--term-bg); }
+.footer-mode { padding-inline: 4px; background: var(--blue); color: var(--term-bg); }
+.figure-caption { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.inspector { display: grid; gap: 15px; padding-block: 2px; }
+.inspector-top { display: flex; gap: 10px; align-items: center; }
+.location-id { background: var(--ink); color: var(--paper); border-radius: 4px; padding: 3px 7px; font: 13px var(--mono); }
+.status { color: var(--accent); font-size: 12px; font-weight: 600; }
+#detail-summary { color: var(--muted); font-size: 14px; }
+dl { margin: 0; display: grid; gap: 11px; }
+dl > div { display: grid; gap: 3px; }
+dt { font-size: 11px; color: var(--muted); }
+dd { margin: 0; font-size: 13px; }
+.limit { background: color-mix(in srgb, var(--accent) 6%, var(--paper)); border: 1px solid var(--line); padding: 12px; font-size: 13px; border-radius: 5px; }
+.limit strong { display: block; font-size: 12px; margin-bottom: 3px; }
+code { font-family: var(--mono); font-size: .85em; overflow-wrap: anywhere; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font: 11px/1.6 var(--mono); color: var(--ink); background: var(--paper); border: 1px solid var(--line); padding: 12px; border-radius: 4px; }
+.section { display: grid; gap: 15px; border-top: 1px solid var(--line); padding-top: 23px; }
+.locations { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 22px; }
+.location { border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); padding: 11px 0; display: flex; gap: 11px; align-items: start; text-align: left; font-size: 13px; }
+.location > span:first-child { color: var(--muted); font: 11px/1.9 var(--mono); }
+.location small { display: block; color: var(--muted); font-size: 11px; }
+.location[aria-pressed="true"] { color: var(--accent); }
+.agent-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.option { display: grid; align-content: start; gap: 8px; }
+.option p { font-size: 13px; color: var(--muted); }
+.option-label { font-size: 11px; color: var(--accent); }
+.option-demo { background: var(--term-sidebar); color: var(--term-text); padding: 12px; font: 12px/1.9 var(--mono); border-radius: 4px; }
+.option-demo div { display: flex; flex-wrap: wrap; gap: 12px; }
+.caveat { color: var(--muted); font-size: 12px; }
+details { color: var(--muted); font-size: 12px; }
+summary { cursor: pointer; color: var(--ink); }
+.evidence { margin-top: 14px; display: grid; gap: 9px; }
+.evidence code { font-size: 11px; }
+footer { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; color: var(--muted); font-size: 11px; }
+@media(max-width: 1050px) { .workspace { grid-template-columns: minmax(0, 1fr); } .inspector { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 26px; padding-top: 8px; } .inspector-top,h2#detail-title,#detail-summary { grid-column: 1 / -1; } .inspector pre { grid-column: 1 / -1; } }
+@media(max-width: 650px) { body { padding-block: 22px 32px; } .locations { grid-template-columns: repeat(2, minmax(0, 1fr)); } .agent-options { grid-template-columns: 1fr; gap: 24px; } .inspector { grid-template-columns: 1fr; } .canvas-note { flex-wrap: wrap; } .lead { font-size: 14px; } }
+@media(prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+<main>
+<header>
+  <p class="eyebrow">终端版 Herdr 0.9.5 · 纯插件与原生配置 · 位置说明</p>
+  <h1>颜色可以落在哪里</h1>
+  <p class="lead">点击布局中的文字或编号，查看着色范围。示意使用虚构项目名；0.1.0 已实现父 Space 标题及 Agents 所属 Space 名称着色，其余位置标注的是扩展能力。</p>
+  <p class="answer"><strong>你关心的 agent 文字可以着色，但有条件。</strong>名称不同的 agent 可以分别匹配；同名 agent 分属不同标签时，原生名称无法直接按 Space 区分颜色。插件已把 Agents 列表里对应的 <strong>Space 名称</strong>染成标签色，包括 worktree 子 Space 的所属标签。</p>
+</header>
+<section class="toolbar" aria-label="图例和预览">
+  <div class="legend"><span><i class="symbol done"></i>插件已实现</span><span><i class="symbol config"></i>原生配置可扩展</span><span><i class="symbol theme"></i>全局主题控制</span></div>
+  <button id="toggle-preview" class="action" aria-pressed="true">关闭示意中的 Agents 标签色</button>
+</section>
+<div class="workspace">
+<figure>
+  <div class="canvas preview-on" id="terminal-canvas">
+    <div class="canvas-note"><span>终端布局示意 · 可点击标注</span><span>非实时界面 · 不会修改 Herdr</span></div>
+    <div class="terminal-scroll">
+    <div class="terminal">
+      <aside class="sidebar" aria-label="Spaces 与 Agents 侧栏示意">
+        <div>
+          <div class="region-head"><span>spaces</span><button class="hot" data-location="sidebar" aria-label="侧栏背景和选中行">背景 / 选中 <span class="number">08</span></button></div>
+          <div class="row selected"><button class="hot t-green" data-location="state" aria-label="Space 状态图标">●<span class="number">03</span></button><button class="hot t-blue" data-location="title">接口优化<span class="number">01</span></button><span class="grow"></span><button class="hot t-blue" data-location="fold" aria-label="原生折叠箭头">▾<span class="number">07</span></button></div>
+          <div class="row details-row"><button class="hot t-muted" data-location="branch">main<span class="number">04</span></button><button class="hot t-green" data-location="branch">↑2 ↓1</button></div>
+          <div class="row indent"><span>└─</span><span class="t-green">●</span><button class="hot" data-location="child">接口分支<span class="number">02</span></button></div>
+          <div class="row"><span class="t-muted">·</span><button class="hot t-blue" data-location="title">数据优化</button></div>
+          <div class="row"><span class="t-yellow">●</span><button class="hot t-yellow" data-location="title">文档维护</button></div>
+          <div class="row"><span class="t-muted">·</span><span>未标记项目</span></div>
+        </div>
+        <div class="sidebar-rule"></div>
+        <div>
+          <div class="region-head"><span>agents</span><span>grouped</span></div>
+          <div class="agent-block">
+            <div class="row"><button class="hot t-green" data-location="state">●</button><button class="hot agent-space" data-tag="blue" data-location="agent-space">接口优化<span class="number">06</span></button><span class="t-muted">· 实现</span></div>
+            <div class="row agent-detail"><button class="hot agent-name" data-location="agent">coding-agent<span class="number">05</span></button></div>
+          </div>
+          <div class="agent-block">
+            <div class="row"><button class="hot t-yellow" data-location="state">●</button><button class="hot agent-space" data-tag="yellow" data-location="agent-space">文档维护</button><span class="t-muted">· 校对</span></div>
+            <div class="row agent-detail"><button class="hot agent-name" data-location="agent">coding-agent</button></div>
+          </div>
+        </div>
+        <div class="sidebar-bottom"><span>编号指向颜色位置</span><span>小屏可横向查看此图 →</span></div>
+      </aside>
+      <div class="main-pane">
+        <div class="tabs"><button class="hot" data-location="tabs"><span class="tab-on">1 实现</span> <span class="tab-off">2 日志</span><span class="number">09</span></button><span class="grow"></span><span class="t-muted">+</span></div>
+        <div class="pane">
+          <button class="hot pane-label" data-location="border">编码窗格 · focused<span class="number">10</span></button>
+          <button class="hot body-sample" data-location="output">
+            <span class="t-muted"># 程序输出示意 <span class="number">12</span></span>
+            <span class="blank"></span>
+            <span>› 检查接口实现</span>
+            <span class="blank"></span>
+            <span>正在读取项目文件…</span>
+            <span class="t-green">验证完成</span>
+            <span class="t-muted">这部分颜色由终端内的程序决定。</span>
+          </button>
+          <button class="hot mock-popup" data-location="manager"><b>插件管理弹窗示意 <span class="number">11</span></b><span class="t-blue">标签 开发 · 蓝色</span><span>接口优化　数据优化</span><br><span class="t-muted">s 标签排序　c 标签颜色</span></button>
+        </div>
+        <div class="footer-bar"><button class="hot" data-location="footer"><span class="footer-mode">SPACE</span> <span>j/k 选择 · Enter 确认</span><span class="number">13</span></button></div>
+      </div>
+    </div>
+    </div>
+    <div class="preview-label" id="preview-note">0.1.0 效果示意：Agents 条目里的 Space 名称跟随标签色，agent 名称保持原样。</div>
+  </div>
+  <figcaption class="figure-caption">位置按终端常见布局绘制，示例换行经过简化；底部提示仅在相关模式出现。选中位置的浅色描边是本页标注，不是 Herdr 的颜色设置。</figcaption>
+</figure>
+<aside class="inspector" id="inspector" aria-live="polite" aria-atomic="false">
+  <div class="inspector-top"><span class="location-id" id="detail-id">05</span><span class="status" id="detail-status">原生配置可扩展 · 同名受限</span></div>
+  <h2 id="detail-title">Agents 中的 agent 名称</h2>
+  <p id="detail-summary">可以给名称文字设置前景色。按标签自动区分时，规则只能匹配显示名称；两个同名 agent 会一起命中。</p>
+  <dl>
+    <div><dt>颜色位置</dt><dd id="detail-style">文字前景色，另支持加粗、变暗；不能单独设文字块背景。</dd></div>
+    <div><dt>影响范围</dt><dd id="detail-scope">Agents 列表中的 agent token；匹配值相同的条目使用同一规则。</dd></div>
+    <div><dt>当前插件</dt><dd id="detail-current">保留 agent 原生名称与样式；对应 Space 名称已跟随标签着色（06）。</dd></div>
+  </dl>
+  <div class="limit"><strong>需要注意</strong><span id="detail-limit">没有按 workspace_id 或标签查询的规则条件。为同名 agent 替换自定义名称 token 会带来重启后名称缺失问题，不建议沿用这种方式。</span></div>
+  <pre id="detail-code">[ui.sidebar.agents]
+# 原生 agent token 可设置 fg 与文字规则
+# 完整配置需保留现有 rows / rows_by_agent</pre>
+</aside>
+</div>
+<section class="section" aria-labelledby="locations-heading">
+  <h2 id="locations-heading">所有标注位置</h2>
+  <div class="locations" id="locations"></div>
+</section>
+<section class="section" aria-labelledby="agents-heading">
+  <h2 id="agents-heading">让 agent 和标签建立颜色关联</h2>
+  <div class="agent-options">
+    <article class="option"><span class="option-label">0.1.0 已实现</span><h3>给对应的 Space 名称着色</h3><div class="option-demo"><div>coding-agent <span class="t-blue">接口优化</span></div><div>coding-agent <span class="t-yellow">文档维护</span></div></div><p>保留原生 agent 名称，在同一条目中给所属 Space 名称匹配标签色。同名 agent 也容易区分，停用插件后名称仍正常显示。</p></article>
+    <article class="option"><span class="option-label">已有独立名称时可用</span><h3>直接给 agent 名称着色</h3><div class="option-demo"><div><span class="t-blue">api-worker</span> 接口优化</div><div><span class="t-yellow">docs-worker</span> 文档维护</div></div><p>按 agent 显示名称匹配颜色。跨标签存在相同名称时无法区分；每个 token 最多 16 条规则。当前插件尚未管理这些规则。</p></article>
+    <article class="option"><span class="option-label">接受增加可见文字时</span><h3>增加彩色标签标记</h3><div class="option-demo"><div><span class="t-blue">[开发]</span> coding-agent</div><div><span class="t-yellow">[文档]</span> coding-agent</div></div><p>在原生名称旁增加独立标签 token。需要插件同步每个 pane 的标签信息；标记缺失时原生名称仍在，但会增加你原先未要求的标签文字。</p></article>
+  </div>
+  <p class="caveat">第一种方案已实现，其他两种为扩展能力说明。agent 在 worktree 子 Space 中时，插件使用该子项的 label 映射到所属标签，不依赖父标题规则自动继承。终端正文里的 agent 回复颜色由该程序自身决定。</p>
+</section>
+<section class="section">
+  <details><summary>实现边界与核对依据</summary><div class="evidence">
+    <p><strong>侧栏 token：</strong><code>fg / bold / dim</code> 是文字样式；没有 token 的 <code>bg</code>。规则判断当前 token 的显示值，不能跨 token 查询标签或 Space ID。来源：<code>src/config/sidebar/rules.rs</code>、<code>src/ui/sidebar/tokens.rs</code>。</p>
+    <p><strong>Agents 数据：</strong>agent 的显示名、所属 Space 名和 pane 元数据分别解析；不自动继承 workspace 的自定义元数据。来源：<code>src/client/shell/agent_sidebar.rs</code>、<code>src/api/schema/agents.rs</code>。</p>
+    <p><strong>原生 worktree：</strong>子项有自己的标题匹配值，部分自动标题由分支生成；不能仅用父 Space 的规则覆盖子项。来源：<code>src/client/shell/sidebar.rs</code>。</p>
+    <p><strong>全局主题：</strong><code>[theme.custom]</code> 可以覆盖共享配色字段，例如 <code>accent</code>、<code>sidebar_bg</code>、<code>active_row_bg</code>、<code>panel_bg</code>、<code>overlay0</code>。同一字段被多个区域复用，不等于每处可独立指定颜色。来源：<code>src/config/theme.rs</code> 及对应 UI 渲染代码。</p>
+    <p><strong>配置生效：</strong>需要通过 Herdr 配置重载应用并检查结果；本页完全离线，只展示位置。当前插件管理的颜色块带完整性校验，扩展应由插件维护，避免直接修改其生成的配置段。</p>
+    <p>核对对象：Herdr 0.9.5 源码与 Herdr Colored Tag 0.1.0 实现。该页为独立的说明示意，不是 Herdr 官方设置页，也不是当前会话截图。</p>
+  </div></details>
+</section>
+<footer><span>终端配色位置图 · 配置能力核对版</span><span>查看位置不会改变任何 Space、agent 或主题设置</span></footer>
+</main>
+<script>
+const locations = [
+{id:'title',n:'01',name:'父 Space 标题',status:'插件已实现',short:'按标签设置文字色',summary:'当前插件把同标签的父 Space 标题设置为同一种颜色，并把这些 Space 排在一起。',style:'标题文字前景色；token 还支持加粗与变暗。',scope:'Spaces 区的 workspace token，精确匹配原生标题。',current:'已实现。标签管理中的颜色操作控制这里。',limit:'最多 16 个不同标题规则；同名标题不能配置互相冲突的颜色。emoji 的固有颜色可能不随文字色变化。',code:'[ui.sidebar.spaces]\nrows = [\n  ["state_icon", {token = "workspace", rules = [\n    {equals = "接口优化", fg = "#7aa2f7"}\n  ]}],\n  ["branch", "git_status"]\n]'},
+{id:'child',n:'02',name:'worktree 子 Space 标题',status:'原生配置可扩展',short:'需单独匹配子项标题',summary:'子 Space 的标题也能匹配颜色规则，但不会自动继承父 Space 的颜色。',style:'子项标题文字前景色；不包含树形连接符。',scope:'每个子项实际渲染的 workspace 标题值。',current:'刻意保留原生颜色，只让父标题表达标签。',limit:'自动命名的子项可能显示分支名，与 API 的 Space label 不同。扩展要处理实际显示值、重名和 16 条规则限制。',code:'# 可扩展到 workspace 的标题规则\n{equals = "接口分支", fg = "#7aa2f7"}\n# 不是只给父项一条规则就能自动继承'},
+{id:'state',n:'03',name:'Space / agent 状态图标',status:'原生配置可扩展',short:'建议保留运行状态语义',summary:'行首的状态图标、状态文字可以通过侧栏 token 样式调整；默认颜色用于表达工作、等待等状态。',style:'state_icon 图标或 state_text 文字前景色；不改变所在整行背景。',scope:'分别配置 spaces 与 agents 区域中的对应 token。',current:'保留原生状态颜色。',limit:'state_icon 只接受固定样式，不接受匹配规则；固定颜色会覆盖原生状态区分。state_text 可按状态文字匹配，但不能按所属标签匹配。',code:'# 对应 rows 中的 token 项\n{token = "state_icon", fg = "#9ece6a"}\n# 状态颜色与标签颜色宜分开使用'},
+{id:'branch',n:'04',name:'分支、Git 状态及路径文字',status:'原生配置可扩展',short:'设置各 token 的文字样式',summary:'分支名和 Git ahead/behind 数量可设置文字样式。路径没有内置 token，需要插件额外提供自定义元数据。',style:'前景色、加粗、变暗；不是整块背景色。',scope:'branch、git_status 等 token 各自的值。',current:'保留原生 branch / git_status 行及其默认样式。',limit:'branch 规则只匹配分支文字；git_status 不支持规则，固定前景色会覆盖 ahead/behind 原有绿红区分。path/cwd 不是内置 token，只能另加 $path 等自定义数据。',code:'# rows 中可单独设置文字样式\n{token = "branch", fg = "#bb9af7"}\n{token = "git_status", fg = "#e0af68"}'},
+{id:'agent',n:'05',name:'Agents 中的 agent 名称',status:'原生配置可扩展 · 同名受限',short:'同名不能按 Space 区分',summary:'可以给名称文字设置前景色。按标签自动区分时，规则只能匹配显示名称；两个同名 agent 会一起命中。',style:'文字前景色，另支持加粗、变暗；不能单独设文字块背景。',scope:'Agents 列表中的 agent token；匹配值相同的条目使用同一规则。',current:'保留 agent 原生名称与样式；对应 Space 名称已跟随标签着色（06）。',limit:'没有按 workspace_id 或标签查询的规则条件。替换成自定义名称 token 会在元数据缺失、过期或冷启动时丢失名字，不建议用这种方式保持原名。',code:'# Agents rows 中的原生 token 项\n{token = "agent", rules = [\n  {equals = "api-worker", fg = "#7aa2f7"},\n  {equals = "docs-worker", fg = "#e0af68"}\n]}\n# 全部叫 coding-agent 时无法按所属 Space 区分'},
+{id:'agent-space',n:'06',name:'Agents 中的所属 Space 名称',status:'插件已实现',short:'跟随所属标签颜色',summary:'agent 条目里显示的 Space 名称跟随标签色，保留 agent 原生名称和状态图标。',style:'Agents 区 workspace token 的文字前景色。',scope:'每个 agent 对应 Space 的 label；同名 Space 仍受匹配冲突限制。',current:'0.1.0 已实现，包含 worktree 子项。顶部按钮可比较示意中的着色效果。',limit:'最多 16 个不同 label，包含尚未运行 agent 的已标记 Space 和 worktree 子项。现存自定义 rows / rows_by_agent 会提示冲突，不自动覆盖。',code:'# 放入 Agents 行配置的 workspace 项\n{token = "workspace", rules = [\n  {equals = "接口优化", fg = "#7aa2f7"},\n  {equals = "文档维护", fg = "#e0af68"}\n]}\n# 原生 agent token 继续保留'},
+{id:'fold',n:'07',name:'原生折叠箭头',status:'全局主题控制',short:'共享 accent 色',summary:'worktree 组的折叠箭头采用主题强调色，当前不是一个可按标签匹配的标题 token。',style:'折叠箭头前景色。',scope:'共享 theme.custom.accent，全局生效。',current:'保持原生箭头和折叠行为。',limit:'改变 accent 也会影响活动标签页、聚焦边框和其他强调区域。树形连接符另有原生默认样式，不属于子项标题文字。',code:'[theme.custom]\naccent = "#7aa2f7"\n# 共享主题字段，不是按 Space 设置'},
+{id:'sidebar',n:'08',name:'侧栏背景与选中行',status:'全局主题控制',short:'背景可调，不能分标签着色',summary:'侧栏底色、活动行与导航选择行都有主题颜色；它们作用于整个界面的对应状态。',style:'sidebar_bg、active_row_bg、selection_bg 背景色。',scope:'全局主题字段，Spaces 与 Agents 等区域可能共同使用。',current:'保持用户主题；当前插件只修改标题前景色。',limit:'无法通过标题 token 规则给某个标签的所有行设置独立背景色。标签分隔色块也不属于现有原生行能力。',code:'[theme.custom]\nsidebar_bg = "#202838"\nactive_row_bg = "#303c52"\nselection_bg = "#3d4c68"'},
+{id:'tabs',n:'09',name:'顶部标签栏',status:'全局主题控制',short:'文字与背景共享主题字段',summary:'活动标签页、非活动标签页和标签栏背景都能随主题调整。',style:'活动项：accent 背景、panel_bg 文字。非活动项：surface0 背景、overlay0/overlay1 文字。',scope:'全局共享主题。该标签栏位于右侧工作区上方。',current:'插件尚未管理标签栏。',limit:'不能用这些全局字段按 Space 标签逐项配置。panel_bg 为 reset 时，活动项文字有备用色。',code:'[theme.custom]\npanel_bg = "#181e2b"\naccent = "#7aa2f7"\nsurface0 = "#273247"\noverlay0 = "#9baac2"'},
+{id:'border',n:'10',name:'窗格边框与边框标题',status:'全局主题控制',short:'区分聚焦与非聚焦',summary:'窗格聚焦时，边框和边框标题使用强调色；非聚焦时使用较弱的主题颜色。',style:'聚焦前景 accent；非聚焦前景 overlay0。',scope:'所有窗格共享的焦点状态样式。',current:'插件不改变窗格边框。',limit:'没有独立的按标签边框色映射。标题集成在边框中；仅边框显示时可见。远程连接的窗格边框可能采用服务器主题，不能保证随本机主题一起改变。',code:'[theme.custom]\naccent = "#7aa2f7"\noverlay0 = "#9baac2"'},
+{id:'manager',n:'11',name:'插件自己的管理弹窗',status:'插件界面可扩展',short:'内容由插件自行绘制',summary:'标签管理和排序界面的文字由本插件的 curses 界面绘制，可以进一步设计颜色、选中样式和提示。',style:'插件内部文字前景、背景和选择样式均可设计；外层弹窗框仍由 Herdr 绘制。',scope:'只影响插件自己的弹窗内容。',current:'已为标签标题、所属 Space 行使用标签色，选中项反显。',limit:'弹窗里的自绘能力不能转用于原生侧栏插入标签标题行或色块；可用颜色还取决于终端色彩支持。',code:'# 插件界面内的绘制能力\ncurses.init_pair(pair_id, foreground, background)\ncurses.color_pair(pair_id)\n# 这不是 Herdr 侧栏 token 的样式接口'},
+{id:'output',n:'12',name:'终端正文与 agent 回复',status:'由终端内程序控制',short:'不由 Space 标签插件接管',summary:'agent 回复、shell 提示、编辑器和日志正文由各自程序绘制，它们可以输出自己的 ANSI 颜色。',style:'程序提供的主题、ANSI 前景/背景，以及宿主终端默认配色。',scope:'具体程序或宿主终端，不是侧栏 token 与 theme.custom。',current:'插件不处理终端输出。',limit:'无法通过给父 Space 设置标签，通用地把其中所有 agent 正文染成同一色；需要各程序独立提供配色接口。',code:'# 正文示意，不是 Herdr 配置字段\n程序主题 / ANSI 样式 / 终端默认颜色\n\n# 与侧栏 agent 名称的颜色是两处不同位置'},
+{id:'footer',n:'13',name:'底部模式提示与快捷键',status:'全局主题控制',short:'按模式显示，非永久底栏',summary:'工作区底部出现的导航或调整模式提示，也使用共享主题配色。',style:'提示文字 overlay0、按键 accent、底色 panel_bg；模式徽标 accent，调整大小模式使用 mauve。',scope:'右侧工作区底部的临时提示，不跨越左侧侧栏。',current:'插件未管理这一部分。',limit:'这里的颜色表达操作模式；改变主题会同时影响使用相同字段的其他区域。',code:'[theme.custom]\noverlay0 = "#9baac2"\naccent = "#7aa2f7"\npanel_bg = "#181e2b"\nmauve = "#bb9af7"'}
+];
+const list = document.getElementById('locations');
+locations.forEach(item => {
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'location'; button.dataset.location = item.id;
+  const n = document.createElement('span'); n.textContent = item.n;
+  const text = document.createElement('span'); text.textContent = item.name;
+  const small = document.createElement('small'); small.textContent = item.short; text.appendChild(small);
+  button.append(n,text); list.appendChild(button);
+});
+function selectLocation(id) {
+  const item = locations.find(entry => entry.id === id); if (!item) return;
+  document.getElementById('detail-id').textContent = item.n;
+  document.getElementById('detail-title').textContent = item.name;
+  document.getElementById('detail-status').textContent = item.status;
+  for (const key of ['summary','style','scope','current','limit','code']) document.getElementById('detail-' + key).textContent = item[key];
+  document.querySelectorAll('[data-location]').forEach(button => {
+    const on = button.dataset.location === id; button.classList.toggle('is-active', on); button.setAttribute('aria-pressed', String(on));
+  });
+}
+document.querySelectorAll('[data-location]').forEach(button => button.addEventListener('click', () => selectLocation(button.dataset.location)));
+document.getElementById('toggle-preview').addEventListener('click', event => {
+  const button = event.currentTarget; const on = button.getAttribute('aria-pressed') !== 'true';
+  button.setAttribute('aria-pressed', String(on));
+  button.textContent = on ? '关闭示意中的 Agents 标签色' : '显示 Agents 的 Space 标签色';
+  document.getElementById('terminal-canvas').classList.toggle('preview-on', on);
+  document.getElementById('preview-note').hidden = !on;
+  selectLocation('agent-space');
+});
+selectLocation('agent');
+</script>
+</html>
